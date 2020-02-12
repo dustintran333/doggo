@@ -25,6 +25,7 @@ Either via command line:
 Or browser:
     localhost/doggo/dev/build?flush=all
     localhost/doggo/dev/tasks/Doggo-Task-FetchParksTask
+    localhost/doggo/dev/tasks/Doggo-Task-FetchPNCCTask
 
 ```
 

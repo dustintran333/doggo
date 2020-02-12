@@ -11,7 +11,7 @@ class Park extends \SilverStripe\ORM\DataObject
         'Latitude' => 'Decimal(9,6)',
         'Longitude' => 'Decimal(9,6)',
         'Notes' => 'Text',
-        'Provider' => "Enum(array('Pamly CC', 'Wellington City Council'))",
+        'Provider' => "Enum(array('Palmy CC', 'Wellington City Council'))",
         'ProviderCode' => 'Varchar(100)', //GlobalID
         'GeoJson' => 'Text',
         'FeatureOnOffLeash' => "Enum(array('On-leash', 'Off-leash'), 'On-leash')",

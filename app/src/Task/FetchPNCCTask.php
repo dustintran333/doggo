@@ -7,11 +7,11 @@ use GuzzleHttp\Client;
 use SilverStripe\Dev\BuildTask;
 use SilverStripe\ORM\DB;
 
-class FetchParksTask extends BuildTask
+class FetchPNCCTask extends BuildTask
 {
-    private static $api_url;
+    private static $api_url2;
 
-    private static $api_title;
+    private static $api_title2;
 
     public function run($request)
     {
@@ -19,12 +19,12 @@ class FetchParksTask extends BuildTask
 
         $response = $client->request(
             'GET',
-            $this->config()->get('api_url'),
+            $this->config()->get('api_url2'),
             ['User-Agent' => 'Doggo (www.somar.co.nz)']
         );
 
         if ($response->getStatusCode() !== 200) {
-            user_error('Could not access ' . $this->config()->get('api_url'));
+            user_error('Could not access ' . $this->config()->get('api_url2'));
             exit;
         }
 
@@ -34,7 +34,7 @@ class FetchParksTask extends BuildTask
          * As we encounter each record in the API source, we unset this.
          * Once done, any still set are deleted.
          */
-        $existingParks = Park::get()->filter('Provider', $this->config()->get('api_title'));
+        $existingParks = Park::get()->filter('Provider', $this->config()->get('api_title2'));
         foreach ($existingParks as $park) {
             $park->IsToPurge = true;
             $park->write();
@@ -45,34 +45,40 @@ class FetchParksTask extends BuildTask
         $parks = $data->features;
         foreach ($parks as $park) {
             $parkObject = Park::get()->filter([
-                'Provider' => $this->config()->get('api_title'),
-                'ProviderCode' => $park->properties->GlobalID,
+                'Provider' => $this->config()->get('api_title2'),
+                'ProviderCode' => $park->properties->OBJECTID,
             ])->first();
             $status = 'changed';
 
             if (!$parkObject) {
                 $status = 'created';
                 $parkObject = Park::create();
-                $parkObject->Provider = $this->config()->get('api_title');
-                $parkObject->ProviderCode = $park->properties->GlobalID;
+                $parkObject->Provider = $this->config()->get('api_title2');
+                $parkObject->ProviderCode = $park->properties->OBJECTID;
             }
 
-            if ($park->properties->On_Off === 'Off leash') {
-                $leash = 'Off-leash';
-            } elseif ($park->properties->On_Off === 'Prohibited') {
-                continue;
+            //set leash
+            if (isset($park->properties->On_Off)) {
+                if ($park->properties->On_Off === 'Off leash') {
+                    $leash = 'Off-leash';
+                } elseif ($park->properties->On_Off === 'Prohibited') {
+                    continue;
+                }
             } else {
                 $leash = 'On-leash';
             }
 
-            $geometry = $park->geometry->coordinates;
+            //set geometry
+            if(isset($park->geometry))
+                $geometry = $park->geometry->coordinates;
 
+            //set the rest of attr
             $parkObject->update([
                 'IsToPurge' => false,
-                'Title' => $park->properties->name,
-                'Latitude' => $geometry[0][0][0],
-                'Longitude' => $geometry[0][0][1],
-                'Notes' => $park->properties->Details,
+                'Title' => $park->properties->RESERVE_NAME?$park->properties->RESERVE_NAME:"NO NAME",
+                'Latitude' => isset($geometry)?$geometry[0][0][0]:null,
+                'Longitude' => isset($geometry)?$geometry[0][0][1]:null ,
+                'Notes' => $park->properties->DESCRIPTION,
                 'GeoJson' => json_encode($park),
                 'FeatureOnOffLeash' => $leash,
             ]);
@@ -83,7 +89,7 @@ class FetchParksTask extends BuildTask
         }
 
         $existingParks = Park::get()->filter([
-            'Provider' => $this->config()->get('api_title'),
+            'Provider' => $this->config()->get('api_title2'),
             'IsToPurge' => true,
         ]);
         foreach ($existingParks as $park) {
